@@ -1,16 +1,34 @@
+require "helpers"
+local sprite = require "sprite"
+
 display.setStatusBar(display.HiddenStatusBar)
-system.setAccelerometerInterval(30)
+system.setAccelerometerInterval(70)
+local bringToFront = function(group)
+  if group then
+    local parent = group.parent
+    parent:remove(group)
+    parent:insert(group)
+  end
+end
 
 local ball = display.newImage("ball.png")
-
-Runtime:addEventListener("touch", function(event)
-  if "began" == event.phase then
-    if ball.tween then
-      transition.cancel(ball.tween)
-    end
-   ball.tween = transition.to(ball, {time=700, x=event.x, y=event.y})
-  end
-end)
+--[[
+local ball = sprite.newAnim {
+  "magenta_1_medium.png",
+  "magenta_2_medium.png",
+  "magenta_3_medium.png",
+  "magenta_4_medium.png",
+  "magenta_5_medium.png",
+  "magenta_6_medium.png",
+  "magenta_7_medium.png",
+  "magenta_8_medium.png",
+  "magenta_8_medium.png",
+  "magenta_9_medium.png",
+  "magenta_10_medium.png",
+  "magenta_11_medium.png",
+  "magenta_12_medium.png",
+}
+--]]
 
 function table.shuffle(t)
   local n = #t
@@ -45,12 +63,23 @@ local intWidth = ball.width
 local intHeight = ball.height
 local cols = display.contentWidth / intWidth
 local rows = display.contentHeight / intHeight
-local arrayCells = {}
+local cells = {}
 local arrayTmpCells = {}
+local walls = display.newGroup()
+
+local emptyCells = function()
+  helpers.cleanup(walls)
+  for col=#cells, 1, -1 do
+    for row=#cells[col], 1, -1 do
+      table.remove(cells[col], row)
+    end
+    table.remove(cells, col)
+  end
+end
 
 local resetCells = function()
   for col=1, cols do
-    table.insert(arrayCells, {})
+    table.insert(cells, {})
     for row=1, rows do
       local cell = makeCell()
       cell.col = col
@@ -61,17 +90,17 @@ local resetCells = function()
 
       cell.x = (col - 1) * intWidth
       cell.y = (row - 1) * intHeight
-      table.insert(arrayCells[#arrayCells], cell)
+      table.insert(cells[#cells], cell)
     end
   end
 
-  arrayCells[1][1].up = false
-  arrayCells[1][1].left = false
-  arrayCells[1][1].start = true
+  --cells[1][1].up = false
+  --cells[1][1].left = false
+  cells[1][1].start = true
 
-  arrayCells[cols][rows].right = true
-  arrayCells[cols][rows].down = true
-  arrayCells[cols][rows].stop = true
+ -- cells[cols][rows].right = false
+--  cells[cols][rows].down = false
+  cells[cols][rows].stop = true
 end
 
 local connect = function(cellA, cellB)
@@ -95,20 +124,20 @@ local neighborsOf = function(cell)
   local col = cell.col
   local row = cell.row
 
-  if col + 1 <= cols and not arrayCells[col + 1][row].visited then
-    table.insert(neighbors, arrayCells[col + 1][row])
+  if col + 1 <= cols and not cells[col + 1][row].visited then
+    table.insert(neighbors, cells[col + 1][row])
   end
 
-  if col - 1 >= 1 and not arrayCells[col - 1][row].visited then
-    table.insert(neighbors, arrayCells[col - 1][row])
+  if col - 1 >= 1 and not cells[col - 1][row].visited then
+    table.insert(neighbors, cells[col - 1][row])
   end
 
-  if row + 1 <= rows and not arrayCells[col][row + 1].visited then
-    table.insert(neighbors, arrayCells[col][row + 1])
+  if row + 1 <= rows and not cells[col][row + 1].visited then
+    table.insert(neighbors, cells[col][row + 1])
   end
 
-  if row - 1 >= 1 and not arrayCells[col][row - 1].visited then
-    table.insert(neighbors, arrayCells[col][row - 1])
+  if row - 1 >= 1 and not cells[col][row - 1].visited then
+    table.insert(neighbors, cells[col][row - 1])
   end
 
   return neighbors
@@ -144,9 +173,11 @@ local drawWall = function(x1, y1, x2, y2)
 --  wall:append( 105,-35, 43,16, 65,90, 0,45, -65,90, -43,15, -105,-35, -27,-35, 0,-110 )
 
   -- default color and width (can be modified later)
-  wall:setColor( 255, 0, 0, 255 )
-  wall.width = 1
+  wall:setColor(math.random(255), math.random(255), math.random(255), 255 )
+  wall:setColor(255, 50, 50, 255)
+  wall.width = 5
 
+  walls:insert(wall)
   return wall
 end
 
@@ -171,16 +202,32 @@ end
 local drawCells = function()
   for col=1, cols do
     for row=1, rows do
-      local cell = arrayCells[col][row]
+      local cell = cells[col][row]
+      if cell.stop then
+        local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
+        rect:setFillColor(0, 0, 255, 100)
+      else
+        local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
+        rect:setFillColor(math.random(255), math.random(255), math.random(255), 30 )
+      end
       drawWalls(cell)
-  --    local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
- --     rect:setFillColor(255,255,255, 0)
---      rect:setStrokeColor(0,0,255)
     end
   end
 end
 
+local newGame = function()
+  resetCells()
+  carve(cells[math.random(cols)][math.random(rows)])
+  drawCells()
+  bringToFront(ball)
+end
 
-resetCells()
-carve(arrayCells[math.random(cols)][math.random(rows)])
-drawCells()
+newGame()
+
+Runtime:addEventListener("accelerometer", function(event)
+  if event.isShake then
+    emptyCells()
+    newGame()
+  end
+end)
+

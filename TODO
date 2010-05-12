@@ -1,6 +1,8 @@
 [x] generate basic maze
-[ ] mechanism to generate new maze
+[x] draw entrance and exit
+[x] mechanism to generate new maze
 [ ] make code more functional
 [ ] keep ball within bounds
 [ ] add ball movement
 [ ] animate ball movement
+[ ] add some sort of perspective or wood grain effect
