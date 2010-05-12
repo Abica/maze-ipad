@@ -1,0 +1,6 @@
+[x] generate basic maze
+[ ] mechanism to generate new maze
+[ ] make code more functional
+[ ] keep ball within bounds
+[ ] add ball movement
+[ ] animate ball movement
