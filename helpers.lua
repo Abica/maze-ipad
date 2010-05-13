@@ -182,5 +182,10 @@ helpers = {
       helpers.cleanup(child)
       child.parent:remove(child)
     end
+  end,
+
+  round = function(n, idp)
+    local mult = 10 ^ (idp or 0)
+    return math.floor(n * mult + 0.5) / mult
   end
 }

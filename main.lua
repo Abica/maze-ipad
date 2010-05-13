@@ -10,23 +10,29 @@ local bringToFront = function(group)
   end
 end
 
+local rotate = function(o, d)
+  local directions = {up=1, left=2, right=3, down=4}
+  o.rotation = 90 * (directions[d] - 1)
+end
+
 --local ball = display.newImage("ball.png")
 ---[[
 local ball = sprite.newAnim {
-  "magenta_1_small.png",
-  "magenta_2_small.png",
-  "magenta_3_small.png",
-  "magenta_4_small.png",
-  "magenta_5_small.png",
-  "magenta_6_small.png",
-  "magenta_7_small.png",
-  "magenta_8_small.png",
-  "magenta_8_small.png",
-  "magenta_9_small.png",
-  "magenta_10_small.png",
-  "magenta_11_small.png",
-  "magenta_12_small.png",
+  "magenta_1_medium.png",
+  "magenta_2_medium.png",
+  "magenta_3_medium.png",
+  "magenta_4_medium.png",
+  "magenta_5_medium.png",
+  "magenta_6_medium.png",
+  "magenta_7_medium.png",
+  "magenta_8_medium.png",
+  "magenta_8_medium.png",
+  "magenta_9_medium.png",
+  "magenta_10_medium.png",
+  "magenta_11_medium.png",
+  "magenta_12_medium.png",
 }
+
 ball:play()
 ball:translate(ball.width / 2, ball.height / 2)
 --]]
@@ -72,6 +78,10 @@ local emptyCells = function()
   helpers.cleanup(walls)
   for col=#cells, 1, -1 do
     for row=#cells[col], 1, -1 do
+      local cell = cells[col] and cells[col][row]
+      if cell then
+        helpers.cleanup(cell.rect)
+      end
       table.remove(cells[col], row)
     end
     table.remove(cells, col)
@@ -98,6 +108,8 @@ local resetCells = function()
   --cells[1][1].up = false
   --cells[1][1].left = false
   cells[1][1].start = true
+  ball.col = 1
+  ball.row = 1
 
  -- cells[cols][rows].right = false
 --  cells[cols][rows].down = false
@@ -205,14 +217,11 @@ local drawCells = function()
   for col=1, cols do
     for row=1, rows do
       local cell = cells[col][row]
+      cell.rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
       if cell.stop then
-        local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
-        rect:setFillColor(0, 0, 255, 100)
-        walls:insert(rect)
+        cell.rect:setFillColor(0, 0, 255, 100)
       elseif cell.start then
-        local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
-        rect:setFillColor(0, 255, 0, 100)
-        walls:insert(rect)
+        cell.rect:setFillColor(0, 255, 0, 100)
       else
         --local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
         --rect:setFillColor(math.random(255), math.random(255), math.random(255), 30 )
@@ -233,37 +242,84 @@ end
 newGame()
 
 local inBounds = function(x, y)
-
-  print( x, y, display.contentWidth, display.contentHeight)
-
-  print( x > 0,
-         y > 0,
-         x < display.contentWidth,
-         y < display.contentHeight)
-  return x > 0 and
-         y > 0 and
-         x < display.contentWidth and
-         y < display.contentHeight
+  return x > ball.width / 2 and
+         y > ball.height / 2 and
+         x < display.contentWidth - ball.width / 2 and
+         y < display.contentHeight - ball.height / 2
 end
 
-local directionBlocked = function(x, y)
-  return inBounds(x, y)
+local ballHeaded = function(x, y, xInstant, yInstant)
+  local vertical = math.abs(xInstant) < math.abs(yInstant)
+  --local vertical = math.abs(x) < math.abs(y)
+  print("xInstant = ", xInstant)
+  print("yInstant = ", yInstant)
+
+  print("x = ", x)
+  print("y = ", y)
+  if vertical then
+    if yInstant < 0 then
+      return "down"
+    else
+      return "up"
+    end
+  else
+    if xInstant < 0 then
+      return "left"
+    else
+      return "right"
+    end
+  end
 end
+
+local hitWall = function(direction, cell)
+  return cell[direction]
+end
+
+local directionBlocked = function(direction, x, y, cell)
+  return not inBounds(x, y) or hitWall(direction, cell)
+end
+
+local directionTransform = {
+  up = {x=0, y=-1},
+  down = {x=0, y=1},
+  left = {x=-1, y=0},
+  right = {x=1, y=0},
+}
 
 Runtime:addEventListener("accelerometer", function(event)
-  local x = ball.x + (event.xGravity * ball.width)
-  local y = ball.y + (event.yGravity * ball.height)
-  print(event.xGravity * ball.width, event.yGravity * ball.height)
-
-  directionBlocked(x, y)
+  local x = event.xGravity * ball.width
+  local y = -event.yGravity * ball.height
   if event.isShake then
     emptyCells()
     newGame()
   else
+    local cell = cells[ball.col] and cells[ball.col][ball.row]
+    if cell then
+      local direction = ballHeaded(x, y, event.xInstant, event.yInstant)
+      if not hitWall(direction, cell) then --and not directionBlocked(direction, ball.x + x, ball.y + y, cell) then
 
-    if not directionBlocked(x, y) then
-      ball.x = x
-      ball.y = y
+        local transform = directionTransform[direction]
+        local nextCell = cells[ball.col + transform.x] and cells[ball.col + transform.x][ball.row + transform.y]
+        if nextCell then
+          if cell.path then
+            cell.rect:setFillColor(224, 0, 0, 100)
+          else
+            cell.rect:setFillColor(255, 255, 224, 100)
+            cell.path = true
+          end
+
+          ball.col = nextCell.col
+          ball.row = nextCell.row
+
+          rotate(ball, direction)
+          ball.x = nextCell.x + ball.width / 2
+          ball.y = nextCell.y + ball.height / 2
+        end
+        if nextCell.stop then
+         emptyCells()
+         newGame()
+        end
+      end
     end
   end
 end)
