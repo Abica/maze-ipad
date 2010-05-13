@@ -2,7 +2,6 @@ require "helpers"
 local sprite = require "sprite"
 
 display.setStatusBar(display.HiddenStatusBar)
-system.setAccelerometerInterval(70)
 local bringToFront = function(group)
   if group then
     local parent = group.parent
@@ -11,23 +10,25 @@ local bringToFront = function(group)
   end
 end
 
-local ball = display.newImage("ball.png")
---[[
+--local ball = display.newImage("ball.png")
+---[[
 local ball = sprite.newAnim {
-  "magenta_1_medium.png",
-  "magenta_2_medium.png",
-  "magenta_3_medium.png",
-  "magenta_4_medium.png",
-  "magenta_5_medium.png",
-  "magenta_6_medium.png",
-  "magenta_7_medium.png",
-  "magenta_8_medium.png",
-  "magenta_8_medium.png",
-  "magenta_9_medium.png",
-  "magenta_10_medium.png",
-  "magenta_11_medium.png",
-  "magenta_12_medium.png",
+  "magenta_1_small.png",
+  "magenta_2_small.png",
+  "magenta_3_small.png",
+  "magenta_4_small.png",
+  "magenta_5_small.png",
+  "magenta_6_small.png",
+  "magenta_7_small.png",
+  "magenta_8_small.png",
+  "magenta_8_small.png",
+  "magenta_9_small.png",
+  "magenta_10_small.png",
+  "magenta_11_small.png",
+  "magenta_12_small.png",
 }
+ball:play()
+ball:translate(ball.width / 2, ball.height / 2)
 --]]
 
 function table.shuffle(t)
@@ -175,7 +176,8 @@ local drawWall = function(x1, y1, x2, y2)
   -- default color and width (can be modified later)
   wall:setColor(math.random(255), math.random(255), math.random(255), 255 )
   wall:setColor(255, 50, 50, 255)
-  wall.width = 5
+  wall:setColor(0, 255, 200, 255)
+  wall.width = 1
 
   walls:insert(wall)
   return wall
@@ -206,9 +208,15 @@ local drawCells = function()
       if cell.stop then
         local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
         rect:setFillColor(0, 0, 255, 100)
-      else
+        walls:insert(rect)
+      elseif cell.start then
         local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
-        rect:setFillColor(math.random(255), math.random(255), math.random(255), 30 )
+        rect:setFillColor(0, 255, 0, 100)
+        walls:insert(rect)
+      else
+        --local rect = display.newRect(cell.x, cell.y, cell.width, cell.height)
+        --rect:setFillColor(math.random(255), math.random(255), math.random(255), 30 )
+        --rect:setFillColor(0, 0, 0)
       end
       drawWalls(cell)
     end
@@ -224,10 +232,39 @@ end
 
 newGame()
 
+local inBounds = function(x, y)
+
+  print( x, y, display.contentWidth, display.contentHeight)
+
+  print( x > 0,
+         y > 0,
+         x < display.contentWidth,
+         y < display.contentHeight)
+  return x > 0 and
+         y > 0 and
+         x < display.contentWidth and
+         y < display.contentHeight
+end
+
+local directionBlocked = function(x, y)
+  return inBounds(x, y)
+end
+
 Runtime:addEventListener("accelerometer", function(event)
+  local x = ball.x + (event.xGravity * ball.width)
+  local y = ball.y + (event.yGravity * ball.height)
+  print(event.xGravity * ball.width, event.yGravity * ball.height)
+
+  directionBlocked(x, y)
   if event.isShake then
     emptyCells()
     newGame()
+  else
+
+    if not directionBlocked(x, y) then
+      ball.x = x
+      ball.y = y
+    end
   end
 end)
 
