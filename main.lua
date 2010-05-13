@@ -11,7 +11,7 @@ local bringToFront = function(group)
 end
 
 local rotate = function(o, d)
-  local directions = {up=1, left=2, right=3, down=4}
+  local directions = {down=1, right=2, left=3, up=4}
   o.rotation = 90 * (directions[d] - 1)
 end
 
@@ -79,7 +79,8 @@ local emptyCells = function()
   for col=#cells, 1, -1 do
     for row=#cells[col], 1, -1 do
       local cell = cells[col] and cells[col][row]
-      if cell then
+      if cell and cell.rect then
+        cell.rect.isVisible = false
         helpers.cleanup(cell.rect)
       end
       table.remove(cells[col], row)
@@ -189,7 +190,7 @@ local drawWall = function(x1, y1, x2, y2)
   wall:setColor(math.random(255), math.random(255), math.random(255), 255 )
   wall:setColor(255, 50, 50, 255)
   wall:setColor(0, 255, 200, 255)
-  wall.width = 1
+  wall.width = 3
 
   walls:insert(wall)
   return wall
@@ -233,6 +234,8 @@ local drawCells = function()
 end
 
 local newGame = function()
+  ball.col = 1
+  ball.row = 1
   resetCells()
   carve(cells[math.random(cols)][math.random(rows)])
   drawCells()
@@ -295,19 +298,23 @@ Runtime:addEventListener("accelerometer", function(event)
   else
     local cell = cells[ball.col] and cells[ball.col][ball.row]
     if cell then
+      if not cell.start or cell.stop and not cell.path then
+--        cell.rect:setFillColor(255, 255, 224, 255)
+      end
       local direction = ballHeaded(x, y, event.xInstant, event.yInstant)
       if not hitWall(direction, cell) then --and not directionBlocked(direction, ball.x + x, ball.y + y, cell) then
 
         local transform = directionTransform[direction]
         local nextCell = cells[ball.col + transform.x] and cells[ball.col + transform.x][ball.row + transform.y]
         if nextCell then
-          if cell.path then
-            cell.rect:setFillColor(224, 0, 0, 100)
-          else
-            cell.rect:setFillColor(255, 255, 224, 100)
-            cell.path = true
+          if not cell.start or cell.stop and not cell.colored then
+            if cell.path then
+ --             cell.rect:setFillColor(224, 0, 0, 200)
+              cell.colored = true
+            else
+              cell.path = true
+            end
           end
-
           ball.col = nextCell.col
           ball.row = nextCell.row
 
