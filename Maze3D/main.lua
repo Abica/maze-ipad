@@ -1,19 +1,14 @@
 require "helpers"
+--require "maze_generator"
 require "os"
 
-local colors = {
-  green = {0, 255, 0},
-  red = {255, 0, 0},
-  blue = {0, 0, 255},
-  yellow = {100, 100, 100},
-  green = {0, 255, 0},
-  white = {255, 255, 255}
-}
 
-local game = {}
+local texWidth = 64
+local texHeight = 64
+local screenWidth = display.contentWidth
+local screenHeight = display.contentHeight
 
-local walls = display.newGroup()
-
+--local cells = newGame()
 local worldMap = {
   {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -40,10 +35,65 @@ local worldMap = {
   {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
   {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 }
+--[[
+for x=1, #cells do
+  local a = {}
+  local b = {}
+  local c = {}
+  for y=1, #cells[x] do
+    local cell = cells[x] and cells[x][y]
+    local up = 0
+    if cell.up then
+      up = math.random(4)
+    end
+    table.insert(a, up)
+    table.insert(a, up)
+    table.insert(a, up)
 
+    local left = 0
+    if cell.left then
+      left = math.random(4)
+    end
+    table.insert(b, left)
+
+    table.insert(b, 0)
+
+    local right = 0
+    if cell.right then
+      right = math.random(4)
+    end
+    table.insert(b, right)
+
+
+    local down = 0
+    if cell.down then
+      down = math.random(4)
+    end
+    table.insert(c, down)
+    table.insert(c, down)
+    table.insert(c, down)
+  end
+  table.insert(worldMap, a)
+  table.insert(worldMap, b)
+  table.insert(worldMap, c)
+end
+--]]
+
+local colors = {
+  green = {0, 255, 0},
+  red = {255, 0, 0},
+  blue = {0, 0, 255},
+  yellow = {255, 255, 100},
+  green = {0, 255, 0},
+  white = {255, 255, 255}
+}
+
+local game = {}
+
+local walls = display.newGroup()
 local player = {
   posX = 22,
-  posY = 12,
+  posY = 22,
   dirX = -1,
   dirY = 0,
 }
@@ -57,10 +107,10 @@ local time = 0
 local previousTime = 0
 
 local raycast = function()
-  for x=0, display.contentWidth do
+  for x=0, screenWidth do
     --
     -- calculate ray position and direction
-    local cameraX = 2 * x / display.contentWidth - 1
+    local cameraX = 2 * x / screenWidth - 1
     local rayPosX = player.posX
     local rayPosY = player.posY
     local rayDirX = player.dirX + camera.planeX * cameraX
@@ -128,17 +178,17 @@ local raycast = function()
     end
 
     -- Calculate height of line to draw on screen
-    local lineHeight = math.abs(helpers.round(display.contentHeight / perpWallDist))
+    local lineHeight = math.abs(helpers.round(screenHeight / perpWallDist))
 
     -- calculate lowest and highest pixel to fill in current stripe
-    local drawStart = -lineHeight / 2 + display.contentHeight / 2
+    local drawStart = -lineHeight / 2 + screenHeight / 2
     if (drawStart < 0) then
       drawStart = 0
     end
 
-    local drawEnd = lineHeight / 2 + display.contentHeight / 2
-    if drawEnd >= display.contentHeight then
-      drawEnd = display.contentHeight - 1
+    local drawEnd = lineHeight / 2 + screenHeight / 2
+    if drawEnd >= screenHeight then
+      drawEnd = screenHeight - 1
     end
 
     -- draw the pixels of the stripe as a vertical line
@@ -160,39 +210,64 @@ local raycast = function()
 
     -- give x and y sides different brightness
     if side == 1 then
-      wall.alpha = 0.5
+      wall.alpha = 0.3
     end
 
-    -- default color and width (can be modified later)
-   -- wall:setColor(255, 50, 50, 255)
-   -- wall:setColor(0, 255, 200, 255)
     wall.width = 1
 
     walls:insert(wall)
   end
-  -- timing for input and FPS counter
-  previousTime = time
-  time = os.time()
-  local frameTime = (time - previousTime) / 1000.0 -- frameTime is the time this frame has taken, in seconds
-  print(1.0 / frameTime) -- FPS counter
-
-  -- speed modifiers
-  local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
-  local rotSpeed = frameTime * 3.0 -- the constant value is in radians/second
 end
 
 raycast()
 local fromCenter = function(obj, x, y)
-  obj.x =  display.contentWidth / 2 + x
-  obj.y =  display.contentHeight  / 2 + y
+  obj.x =  screenWidth / 2 + x
+  obj.y =  screenHeight  / 2 + y
 end
 
 local fromTopCenter = function(obj, x, y)
-  obj.x =  display.contentWidth / 2 + x
-  obj.y =  display.contentHeight  + y
+  obj.x =  screenWidth / 2 + x
+  obj.y =  screenHeight  + y
 end
 
-local frameTime = 0.01--math.abs(event.xInstant)
+local moveForward = function(ticks)
+  local frameTime = (time - previousTime) / 1000.0
+  local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
+
+  if worldMap[helpers.round(player.posX + player.dirX * moveSpeed)][helpers.round(player.posY)] == 0 then
+    player.posX = player.posX + player.dirX * moveSpeed
+  end
+
+  if worldMap[helpers.round(player.posX)][helpers.round(player.posY + player.dirY * moveSpeed)] == 0 then
+    player.posY = player.posX + player.dirY * moveSpeed
+  end
+end
+
+local moveBackward = function()
+  local frameTime = (time - previousTime) / 1000.0
+  local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
+
+  if worldMap[helpers.round(player.posX - player.dirX * moveSpeed)][helpers.round(player.posY)] == 0 then
+    player.posX = player.posX - player.dirX * moveSpeed
+  end
+
+  if worldMap[helpers.round(player.posX)][helpers.round(player.posY - player.dirY * moveSpeed)] == 0 then
+    player.posY = player.posX - player.dirY * moveSpeed
+  end
+end
+
+local rotateCamera = function(speed)
+  -- both camera direction and camera plane must be rotated
+  local oldDirX = player.dirX
+  player.dirX = player.dirX * math.cos(speed) - player.dirY * math.sin(speed)
+  player.dirY = oldDirX * math.sin(speed) + player.dirY * math.cos(speed)
+
+  local oldPlaneX = camera.planeX
+  camera.planeX = camera.planeX * math.cos(speed) - camera.planeY * math.sin(speed)
+  camera.planeY = oldPlaneX * math.sin(speed) + camera.planeY * math.cos(speed)
+end
+
+
 local upButton = display.newImage("up_arrow.png")
 fromTopCenter(upButton, 200, -300)
 
@@ -207,18 +282,7 @@ fromTopCenter(downButton, 200, -100)
 
 upButton:addEventListener("touch", function(event)
   if event.phase == "began" then
-    previousTime = time
-    time = event.time
-
-    local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
-
-    if worldMap[helpers.round(player.posX + player.dirX * moveSpeed)][helpers.round(player.posY)] == 0 then
-      player.posX = player.posX + player.dirX * moveSpeed
-    end
-
-    if worldMap[helpers.round(player.posX)][helpers.round(player.posY + player.dirY * moveSpeed)] == 0 then
-      player.posY = player.posX + player.dirY * moveSpeed
-    end
+    game.drawingFunc = moveForward
 
     game.drawing = true
   elseif event.phase == "ended" then
@@ -228,19 +292,7 @@ end)
 
 downButton:addEventListener("touch", function(event)
   if event.phase == "began" then
-    previousTime = time
-    time = event.time
-    -- move backwards if no wall behind you
-    local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
-
-    print( helpers.round(player.posX - player.dirX * moveSpeed), helpers.round(player.posY))
-    if worldMap[helpers.round(player.posX - player.dirX * moveSpeed)][helpers.round(player.posY)] == 0 then
-      player.posX = player.posX - player.dirX * moveSpeed
-    end
-
-    if worldMap[helpers.round(player.posX)][helpers.round(player.posY - player.dirY * moveSpeed)] == 0 then
-      player.posY = player.posX - player.dirY * moveSpeed
-    end
+    game.drawingFunc = moveBackward
 
     game.drawing = true
   elseif event.phase == "ended" then
@@ -250,19 +302,12 @@ end)
 
 rightButton:addEventListener("touch", function(event)
   if event.phase == "began" then
-    previousTime = time
-    time = event.time
     -- rotate to the right
-    local rotSpeed = frameTime * 3.0 -- the constant value is in radians/second
-
-    -- both camera direction and camera plane must be rotated
-    local oldDirX = player.dirX
-    player.dirX = player.dirX * math.cos(-rotSpeed) - player.dirY * math.sin(-rotSpeed)
-    player.dirY = oldDirX * math.sin(-rotSpeed) + player.dirY * math.cos(-rotSpeed)
-
-    local oldPlaneX = camera.planeX
-    camera.planeX = camera.planeX * math.cos(-rotSpeed) - camera.planeY * math.sin(-rotSpeed)
-    camera.planeY = oldPlaneX * math.sin(-rotSpeed) + camera.planeY * math.cos(-rotSpeed)
+    game.drawingFunc = function()
+      local frameTime = (time - previousTime) / 1000.0
+      local speed = frameTime * 3.0
+      rotateCamera(-speed)
+    end
 
     game.drawing = true
   elseif event.phase == "ended" then
@@ -272,19 +317,13 @@ end)
 
 leftButton:addEventListener("touch", function(event)
   if event.phase == "began" then
-    previousTime = time
-    time = event.time
-    -- rotate to the left
-    local rotSpeed = frameTime * 3.0 -- the constant value is in radians/second
+    -- the constant value is in radians/second
+    game.drawingFunc = function()
+      local frameTime = (time - previousTime) / 1000.0
+      local speed = frameTime * 3.0
+      rotateCamera(speed)
+    end
 
-    -- both camera direction and camera plane must be rotated
-    local oldDirX = player.dirX
-    player.dirX = player.dirX * math.cos(rotSpeed) - player.dirY * math.sin(rotSpeed)
-    player.dirY = oldDirX * math.sin(rotSpeed) + player.dirY * math.cos(rotSpeed)
-
-    local oldPlaneX = camera.planeX
-    camera.planeX = camera.planeX * math.cos(rotSpeed) - camera.planeY * math.sin(rotSpeed)
-    camera.planeY = oldPlaneX * math.sin(rotSpeed) + camera.planeY * math.cos(rotSpeed)
     game.drawing = true
   elseif event.phase == "ended" then
     game.drawing = false
@@ -295,7 +334,11 @@ end)
 Runtime:addEventListener("enterFrame", function(event)
   if game.drawing then
     helpers.cleanup(walls)
+    if game.drawingFunc then
+      game.drawingFunc()
+    end
     raycast()
-    print("ERE")
   end
+  previousTime = time
+  time = event.time
 end)
