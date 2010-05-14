@@ -42,15 +42,15 @@ local makeVertex = function(x, y)
   }
 end
 
-local intWidth = 128
-local intHeight = 128
+local intWidth = 32
+local intHeight = 32
 local cols = display.stageWidth / intWidth
 local rows = display.stageHeight / intHeight
 local cells = {}
 local arrayTmpCells = {}
 local walls = display.newGroup()
 
-local emptyCells = function()
+emptyCells = function()
   helpers.cleanup(walls)
   for col=#cells, 1, -1 do
     for row=#cells[col], 1, -1 do
@@ -162,8 +162,8 @@ local drawWall = function(x1, y1, x2, y2)
 
   -- default color and width (can be modified later)
   wall:setColor(math.random(255), math.random(255), math.random(255), 255 )
- -- wall:setColor(255, 50, 50, 255)
- -- wall:setColor(0, 255, 200, 255)
+  wall:setColor(255, 50, 50, 255)
+  wall:setColor(0, 255, 200, 255)
   wall.width = 3
 
   walls:insert(wall)
@@ -210,7 +210,7 @@ end
 newGame = function()
   resetCells()
   carve(cells[math.random(cols)][math.random(rows)])
---  drawCells()
+  drawCells()
   return cells
 end
 

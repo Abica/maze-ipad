@@ -1,7 +1,8 @@
 require "helpers"
---require "maze_generator"
+require "maze_generator"
 require "os"
 
+display.setStatusBar(display.HiddenStatusBar)
 
 local texWidth = 64
 local texHeight = 64
@@ -230,7 +231,7 @@ local fromTopCenter = function(obj, x, y)
   obj.y =  screenHeight  + y
 end
 
-local moveForward = function(ticks)
+local moveForward = function()
   local frameTime = (time - previousTime) / 1000.0
   local moveSpeed = frameTime * 5.0 -- the constant value is in squares/second
 
@@ -267,17 +268,22 @@ local rotateCamera = function(speed)
   camera.planeY = oldPlaneX * math.sin(speed) + camera.planeY * math.cos(speed)
 end
 
+local arrowButtonsGroup = display.newGroup()
 
 local upButton = display.newImage("up_arrow.png")
+arrowButtonsGroup:insert(upButton)
 fromTopCenter(upButton, 200, -300)
 
 local rightButton = display.newImage("right_arrow.png")
+arrowButtonsGroup:insert(rightButton)
 fromTopCenter(rightButton, 300, -200)
 
 local leftButton = display.newImage("left_arrow.png")
+arrowButtonsGroup:insert(leftButton)
 fromTopCenter(leftButton, 100, -200)
 
 local downButton = display.newImage("down_arrow.png")
+arrowButtonsGroup:insert(downButton)
 fromTopCenter(downButton, 200, -100)
 
 upButton:addEventListener("touch", function(event)
@@ -330,6 +336,20 @@ leftButton:addEventListener("touch", function(event)
   end
 end)
 
+Runtime:addEventListener("accelerometer", function(event)
+  if event.isShake then
+    game.topDown = not game.topDown
+    if game.topDown then
+      helpers.cleanup(walls)
+      arrowButtonsGroup.isVisible = false
+      newGame()
+    else
+      emptyCells()
+      arrowButtonsGroup.isVisible = true
+      raycast()
+    end
+  end
+end)
 
 Runtime:addEventListener("enterFrame", function(event)
   if game.drawing then

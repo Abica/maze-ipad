@@ -1,0 +1,6 @@
+[x] basic ray casting engine
+[x] maze generation
+[x] draw top down maze
+[x] movement through maze
+[x] switching between 2d and 3d interfaces
+[ ] ray cast maze
