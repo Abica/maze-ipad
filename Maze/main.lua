@@ -315,9 +315,16 @@ ball:addEventListener("drag", function(event)
           ball.col = nextCell.col
           ball.row = nextCell.row
 
+          if ball.tween then
+            transition.cancel(ball.tween)
+          end
+
           rotate(ball, direction)
-          ball.x = nextCell.x + ball.width / 2
-          ball.y = nextCell.y + ball.height / 2
+          ball.tween = transition.to(ball, {
+            time = 100,
+            x = nextCell.x + ball.width / 2,
+            y = nextCell.y + ball.height / 2
+          })
         end
         if nextCell.stop then
          emptyCells()
@@ -335,7 +342,7 @@ Runtime:addEventListener("accelerometer", function(event)
     emptyCells()
     newGame()
   else
-    if math.abs(event.xInstant) > 0.05 or math.abs(event.yInstant) > 0.05 then
+    if math.abs(event.xInstant) > 0.07 or math.abs(event.yInstant) > 0.07 then
       local cell = cells[ball.col] and cells[ball.col][ball.row]
       if cell then
         if not cell.start or cell.stop and not cell.path then
@@ -357,10 +364,16 @@ Runtime:addEventListener("accelerometer", function(event)
             end
             ball.col = nextCell.col
             ball.row = nextCell.row
+            if ball.tween then
+              transition.cancel(ball.tween)
+            end
 
             rotate(ball, direction)
-            ball.x = nextCell.x + ball.width / 2
-            ball.y = nextCell.y + ball.height / 2
+            ball.tween = transition.to(ball, {
+              time = 100,
+              x = nextCell.x + ball.width / 2,
+              y = nextCell.y + ball.height / 2
+            })
           end
           if nextCell.stop then
            emptyCells()
